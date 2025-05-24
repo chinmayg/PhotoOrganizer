@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pillow = ">=10.4.0"
+exifread = ">=3.3.1"
+python-dateutil = ">=2.9.0.post0"
+geopy = ">=2.4.1"
+tqdm = ">=4.66.2"
+
+[dev-packages]
+
+[requires]
+python_version = "3.13" 
