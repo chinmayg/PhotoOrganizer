@@ -29,9 +29,10 @@ class FileHandler:
         """Create the destination path based on date and location."""
         year_folder = str(date_taken.year)
         month_folder = self.month_names[date_taken.month]
+        day_folder = f"{date_taken.day:02d}"
         
         # Create path components
-        dest_path = self.output_folder / year_folder / month_folder / location
+        dest_path = self.output_folder / year_folder / month_folder / day_folder / location
         dest_path.mkdir(parents=True, exist_ok=True)
         
         # Handle filename conflicts

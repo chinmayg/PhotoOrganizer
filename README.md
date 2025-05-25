@@ -3,7 +3,7 @@
 A Python package that organizes photos from different sources (iPhone and Android) by date and location using their metadata.
 
 ## Features
-- Organizes photos by date (Year/Month)
+- Organizes photos by date (Year/Month/Day)
 - Creates location-based subfolders when GPS data is available
 - Supports both iPhone and Android photo formats
 - Preserves original files and metadata
@@ -58,17 +58,21 @@ pipenv run python -m photo_organizer --input-folder ~/Photos --output-folder ~/O
 organized_photos/
 ├── 2024/
 │   ├── 01-January/
-│   │   ├── San Francisco/
-│   │   │   └── IMG_20240101_123456.jpg
-│   │   └── New York/
-│   │       └── IMG_20240115_183000.jpg
+│   │   ├── 01/
+│   │   │   ├── San Francisco/
+│   │   │   │   └── IMG_20240101_123456.jpg
+│   │   ├── 15/
+│   │   │   └── New York/
+│   │   │       └── IMG_20240115_183000.jpg
 │   └── 02-February/
-│       └── Unknown Location/
-│           └── IMG_20240201_140000.jpg
+│       └── 01/
+│           └── Unknown Location/
+│               └── IMG_20240201_140000.jpg
 └── 2023/
     └── 12-December/
-        └── London/
-            └── IMG_20231225_160000.jpg
+        └── 25/
+            └── London/
+                └── IMG_20231225_160000.jpg
 ```
 
 ## Performance
