@@ -7,7 +7,6 @@ from datetime import datetime
 import os
 from hachoir.parser import createParser
 from hachoir.metadata import extractMetadata
-from hachoir.core.timezone import UTC
 
 logger = logging.getLogger(__name__)
 
@@ -40,42 +39,78 @@ class VideoHandler:
         try:
             metadata = {}
             
+            if self.debug:
+                logger.debug(f"\nAttempting to extract metadata from: {video_path}")
+                logger.debug(f"File size: {os.path.getsize(video_path)} bytes")
+                logger.debug(f"File extension: {video_path.suffix.lower()}")
+            
             # Create parser for the video file
             parser = createParser(str(video_path))
             if not parser:
-                logger.error(f"Unable to parse {video_path}")
+                logger.warning(f"Unable to create parser for {video_path}")
                 return metadata
             
             try:
                 # Extract metadata
+                if self.debug:
+                    logger.debug("Parser created successfully, attempting to extract metadata...")
+                
                 hachoir_metadata = extractMetadata(parser)
                 if not hachoir_metadata:
-                    logger.error(f"Unable to extract metadata from {video_path}")
+                    logger.warning(f"Unable to extract metadata from {video_path}")
                     return metadata
 
                 # Get creation date
                 if hachoir_metadata.has('creation_date'):
                     metadata['creation_date'] = hachoir_metadata.get('creation_date')
+                    if self.debug:
+                        logger.debug(f"Found creation date: {metadata['creation_date']}")
 
                 # Get basic video information
                 if hachoir_metadata.has('duration'):
                     metadata['duration'] = hachoir_metadata.get('duration').total_seconds()
+                    if self.debug:
+                        logger.debug(f"Found duration: {metadata['duration']} seconds")
                 
                 if hachoir_metadata.has('width') and hachoir_metadata.has('height'):
                     metadata['width'] = hachoir_metadata.get('width')
                     metadata['height'] = hachoir_metadata.get('height')
+                    if self.debug:
+                        logger.debug(f"Found dimensions: {metadata['width']}x{metadata['height']}")
+                
+                # Get all available metadata for debugging
+                if self.debug:
+                    logger.debug("\nAll available metadata fields:")
+                    for key, value in hachoir_metadata._Metadata__data.items():
+                        logger.debug(f"{key}: {value.value}")
                 
                 # Get GPS data if available
                 # Note: Hachoir might not directly expose GPS data, we'll need to look in raw metadata
                 for key, value in hachoir_metadata._Metadata__data.items():
                     if 'gps' in key.lower():
                         metadata[key] = value.value
+                        if self.debug:
+                            logger.debug(f"Found GPS data: {key}={value.value}")
                 
                 if self.debug:
                     self.debug_metadata(video_path, metadata)
                     
+            except Exception as e:
+                logger.warning(f"Error extracting metadata: {e}")
+                if self.debug:
+                    logger.exception("Detailed metadata extraction error:")
             finally:
                 parser.close()
+                    
+            # If we couldn't get any metadata, try to get basic file information
+            if not metadata and self.debug:
+                logger.debug("No metadata extracted, falling back to basic file information")
+                try:
+                    stat = os.stat(video_path)
+                    logger.debug(f"File creation time: {datetime.fromtimestamp(stat.st_ctime)}")
+                    logger.debug(f"File modification time: {datetime.fromtimestamp(stat.st_mtime)}")
+                except Exception as e:
+                    logger.debug(f"Error getting file information: {e}")
                     
             return metadata
         except Exception as e:
