@@ -10,6 +10,7 @@ python-dateutil = ">=2.9.0.post0"
 googlemaps = ">=4.10.0"
 tqdm = ">=4.66.2"
 hachoir = ">=3.3.0"
+ffmpeg-python = ">=0.2.0"
 
 [dev-packages]
 
