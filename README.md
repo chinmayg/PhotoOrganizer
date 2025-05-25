@@ -1,12 +1,13 @@
 # Photo Organizer
 
-A Python package that organizes photos from different sources (iPhone and Android) by date and location using their metadata.
+A Python package that organizes photos and videos from different sources (iPhone and Android) by date and location using their metadata.
 
 ## Features
-- Organizes photos by date (Year/Month/Day)
+- Organizes photos and videos by date (Year/Month/Day)
 - Creates location-based subfolders when GPS data is available
 - Uses Google Maps Geocoding API for accurate location data
-- Supports both iPhone and Android photo formats
+- Supports both iPhone and Android media formats
+- Supports common image formats (JPG, PNG, HEIC) and video formats (MOV)
 - Customizable file type filtering
 - Preserves original files and metadata
 - Handles duplicate filenames
@@ -50,13 +51,13 @@ pipenv run python -m photo_organizer --input-folder /path/to/photos --output-fol
 ```
 
 ### Available Options
-- `--input-folder`: Directory containing the photos to organize (required)
-- `--output-folder`: Directory where organized photos will be stored (required)
+- `--input-folder`: Directory containing the media files to organize (required)
+- `--output-folder`: Directory where organized files will be stored (required)
 - `--debug`: Enable debug mode for detailed logging
 - `--workers`: Number of worker threads (default: CPU count * 2)
 - `--no-cache`: Disable location caching (not recommended for large collections)
-- `--file-types`: Comma-separated list of file extensions to process (e.g., "jpg,png,heic")
-  Default: jpg,jpeg,png,heic,heif,gif
+- `--file-types`: Comma-separated list of file extensions to process (e.g., "jpg,mov,heic")
+  Default: jpg,jpeg,png,heic,heif,gif,mov
 
 ### Examples
 Basic usage:
@@ -69,9 +70,9 @@ With debug mode and custom worker count:
 pipenv run python -m photo_organizer --input-folder ~/Photos --output-folder ~/Organized --debug --workers 4
 ```
 
-Process only JPG and PNG files:
+Process only JPG and MOV files:
 ```bash
-pipenv run python -m photo_organizer --input-folder ~/Photos --output-folder ~/Organized --file-types jpg,png
+pipenv run python -m photo_organizer --input-folder ~/Photos --output-folder ~/Organized --file-types jpg,mov
 ```
 
 ## Output Structure
@@ -81,7 +82,8 @@ organized_photos/
 │   ├── 01-January/
 │   │   ├── 01/
 │   │   │   ├── San Francisco/
-│   │   │   │   └── IMG_20240101_123456.jpg
+│   │   │   │   ├── IMG_20240101_123456.jpg
+│   │   │   │   └── VID_20240101_123457.mov
 │   │   ├── 15/
 │   │   │   └── New York/
 │   │   │       └── IMG_20240115_183000.jpg
@@ -97,13 +99,14 @@ organized_photos/
 ```
 
 ## Performance
-- Uses parallel processing to handle large photo collections efficiently
+- Uses parallel processing to handle large media collections efficiently
 - Caches location data to minimize API calls and reduce costs
-- Typically processes hundreds of photos per minute
+- Typically processes hundreds of files per minute
 - Memory efficient, suitable for large collections
 
 ## Notes
 - If the Google Maps API key is not set, location services will default to "Unknown Location"
 - The Google Maps Geocoding API has usage limits and may incur costs depending on your usage
 - Location caching helps reduce API calls and associated costs
-- File type filtering is case-insensitive and handles extensions with or without dots 
+- File type filtering is case-insensitive and handles extensions with or without dots
+- Video files (MOV) are organized using the same date/location structure as photos 

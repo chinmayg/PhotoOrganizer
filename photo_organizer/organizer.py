@@ -13,11 +13,14 @@ from contextlib import closing
 from .exif_handler import ExifHandler
 from .gps_handler import GPSHandler
 from .file_handler import FileHandler
+from .video_handler import VideoHandler
 
 logger = logging.getLogger(__name__)
 
 class PhotoOrganizer:
-    """Main class for organizing photos."""
+    """Main class for organizing photos and videos."""
+    
+    VIDEO_EXTENSIONS = {'.mov'}
     
     def __init__(self, input_folder: str, output_folder: str, debug: bool = False,
                  max_workers: int = None, use_cache: bool = True, file_types: Optional[List[str]] = None):
@@ -29,21 +32,32 @@ class PhotoOrganizer:
         
         # Initialize handlers
         self.exif_handler = ExifHandler(debug=debug)
+        self.video_handler = VideoHandler(debug=debug)
         self.gps_handler = GPSHandler(debug=debug, use_cache=use_cache)
         self.file_handler = FileHandler(output_folder, debug=debug, file_types=file_types)
 
+    def is_video_file(self, file_path: Path) -> bool:
+        """Check if the file is a video file."""
+        return file_path.suffix.lower() in self.VIDEO_EXTENSIONS
+
     def process_photo(self, file_path: Path) -> Tuple[bool, str]:
-        """Process a single photo file."""
+        """Process a single media file."""
         try:
             if not file_path.is_file() or not self.file_handler.is_image_file(file_path):
-                return False, f"Skipped {file_path.name}: Not a supported image file"
+                return False, f"Skipped {file_path.name}: Not a supported media file"
 
-            # Get EXIF data
-            exif_data = self.exif_handler.get_exif_data(file_path)
-            
-            # Get date and location
-            date_taken = self.exif_handler.get_date_taken(file_path, exif_data)
-            location = self.gps_handler.get_location(exif_data)
+            # Handle videos and photos differently
+            if self.is_video_file(file_path):
+                # Get video metadata
+                metadata = self.video_handler.get_metadata(file_path)
+                date_taken = self.video_handler.get_date_taken(file_path, metadata)
+                gps_data = self.video_handler.get_gps_data(file_path, metadata)
+                location = self.gps_handler.get_location(gps_data)
+            else:
+                # Get EXIF data for photos
+                exif_data = self.exif_handler.get_exif_data(file_path)
+                date_taken = self.exif_handler.get_date_taken(file_path, exif_data)
+                location = self.gps_handler.get_location(exif_data)
             
             # Create destination path and copy file
             dest_path = self.file_handler.create_destination_path(date_taken, location, file_path)
@@ -58,9 +72,9 @@ class PhotoOrganizer:
             return False, f"Error processing {file_path.name}: {str(e)}"
 
     def organize_photos(self) -> None:
-        """Main method to organize photos."""
+        """Main method to organize media files."""
         start_time = time.time()
-        logger.info(f"Starting photo organization from {self.input_folder} to {self.output_folder}")
+        logger.info(f"Starting media organization from {self.input_folder} to {self.output_folder}")
         
         # Create output directory if it doesn't exist
         self.output_folder.mkdir(parents=True, exist_ok=True)
@@ -79,7 +93,7 @@ class PhotoOrganizer:
             futures = {executor.submit(self.process_photo, file_path): file_path 
                       for file_path in files}
             
-            with tqdm(total=total_files, desc="Processing photos", unit="photo") as pbar:
+            with tqdm(total=total_files, desc="Processing media", unit="file") as pbar:
                 for future in as_completed(futures):
                     success, message = future.result()
                     if success:
@@ -95,16 +109,16 @@ class PhotoOrganizer:
         # Calculate statistics
         end_time = time.time()
         duration = end_time - start_time
-        photos_per_second = processed / duration if duration > 0 else 0
+        files_per_second = processed / duration if duration > 0 else 0
         
         # Print summary
-        logger.info("\nPhoto Organization Summary:")
+        logger.info("\nMedia Organization Summary:")
         logger.info(f"Total files found: {total_files}")
         logger.info(f"Successfully processed: {processed}")
         logger.info(f"Skipped: {skipped}")
         logger.info(f"Errors: {errors}")
         logger.info(f"Total time: {duration:.2f} seconds")
-        logger.info(f"Processing speed: {photos_per_second:.2f} photos/second")
+        logger.info(f"Processing speed: {files_per_second:.2f} files/second")
         
         if hasattr(self.gps_handler, 'cache_db'):
             with closing(sqlite3.connect(str(self.gps_handler.cache_db))) as conn:

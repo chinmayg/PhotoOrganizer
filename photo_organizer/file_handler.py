@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class FileHandler:
     """Handles file operations and organization."""
     
-    DEFAULT_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic', '.heif', '.gif'}
+    DEFAULT_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic', '.heif', '.gif', '.mov'}
     
     def __init__(self, output_folder: Path, debug: bool = False, file_types: Optional[List[str]] = None):
         self.output_folder = Path(output_folder)
@@ -35,7 +35,7 @@ class FileHandler:
                 logger.debug(f"Using default file types: {self.supported_extensions}")
 
     def is_image_file(self, file_path: Path) -> bool:
-        """Check if the file is a supported image."""
+        """Check if the file is a supported image or video file."""
         return file_path.suffix.lower() in self.supported_extensions
 
     def create_destination_path(self, date_taken: datetime, location: str, original_path: Path) -> Path:
