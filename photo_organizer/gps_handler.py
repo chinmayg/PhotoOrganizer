@@ -4,12 +4,13 @@ import logging
 import json
 import time
 from typing import Dict, Any, Optional, Tuple
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut
+import googlemaps
+from googlemaps.exceptions import Timeout
 import sqlite3
 from contextlib import closing
 from pathlib import Path
 from functools import lru_cache
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,13 @@ class GPSHandler:
     def __init__(self, debug: bool = False, use_cache: bool = True):
         self.debug = debug
         self.use_cache = use_cache
-        self.geolocator = Nominatim(user_agent="photo_organizer")
+        
+        # Get Google Maps API key from environment variable
+        self.api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+        if not self.api_key:
+            logger.warning("GOOGLE_MAPS_API_KEY environment variable not set. Location services will return 'Unknown Location'")
+        else:
+            self.gmaps = googlemaps.Client(key=self.api_key)
         
         if use_cache:
             self.init_cache()
@@ -123,6 +130,9 @@ class GPSHandler:
             if self.debug:
                 self.debug_gps_data(exif_data)
                 
+            if not self.api_key:
+                return "Unknown Location"
+                
             if 'GPS GPSLatitude' not in exif_data or 'GPS GPSLongitude' not in exif_data:
                 if self.debug:
                     logger.debug("Missing required GPS coordinates")
@@ -161,33 +171,33 @@ class GPSHandler:
                             logger.debug(f"Geocoding attempt {attempt + 1}/3")
                             logger.debug(f"Querying coordinates: {lat}, {lon}")
                         
-                        location = self.geolocator.reverse(f"{lat}, {lon}", language='en', timeout=10)
-                        if location:
+                        # Use Google Maps Geocoding API
+                        result = self.gmaps.reverse_geocode((lat, lon))
+                        
+                        if result:
                             if self.debug:
-                                logger.debug("Received response from geocoder")
-                                logger.debug(f"Raw response: {json.dumps(location.raw, indent=2)}")
+                                logger.debug("Received response from Google Maps")
+                                logger.debug(f"Raw response: {json.dumps(result, indent=2)}")
                             
-                            address = location.raw.get('address', {})
-                            if self.debug:
-                                logger.debug(f"Address components: {json.dumps(address, indent=2)}")
-                            
-                            city = (address.get('city') or 
-                                   address.get('town') or
-                                   address.get('village') or
-                                   address.get('suburb') or
-                                   address.get('state') or
-                                   address.get('county') or
-                                   'Unknown Location')
+                            # Process the results to find the most appropriate locality
+                            location = "Unknown Location"
+                            for component in result[0]['address_components']:
+                                types = component['types']
+                                if 'locality' in types or 'sublocality' in types:
+                                    location = component['long_name']
+                                    break
+                                elif 'administrative_area_level_2' in types:
+                                    location = component['long_name']
+                                    break
+                                elif 'administrative_area_level_1' in types:
+                                    location = component['long_name']
                             
                             # Cache the result
-                            self.cache_location(lat, lon, city)
-                            return city
-                        else:
-                            if self.debug:
-                                logger.debug("Geocoder returned no results")
+                            self.cache_location(lat, lon, location)
+                            return location
                         
                         time.sleep(1)
-                    except GeocoderTimedOut:
+                    except Timeout:
                         if self.debug:
                             logger.debug(f"Geocoding timed out, attempt {attempt + 1}")
                         time.sleep(2)

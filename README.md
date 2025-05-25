@@ -5,6 +5,7 @@ A Python package that organizes photos from different sources (iPhone and Androi
 ## Features
 - Organizes photos by date (Year/Month/Day)
 - Creates location-based subfolders when GPS data is available
+- Uses Google Maps Geocoding API for accurate location data
 - Supports both iPhone and Android photo formats
 - Preserves original files and metadata
 - Handles duplicate filenames
@@ -15,6 +16,7 @@ A Python package that organizes photos from different sources (iPhone and Androi
 ## Requirements
 - Python 3.13+
 - pipenv (for dependency management)
+- Google Maps API key (for location services)
 
 ## Installation
 1. Install pipenv if you haven't already:
@@ -28,6 +30,17 @@ pip install pipenv   # Using pip
 ```bash
 pipenv install
 ```
+
+3. Set up Google Maps API key:
+   - Go to the [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the Geocoding API for your project
+   - Create credentials (API key) for the Geocoding API
+   - Set the API key as an environment variable:
+```bash
+export GOOGLE_MAPS_API_KEY='your-api-key-here'
+```
+   Note: You can add this to your shell's startup file (.bashrc, .zshrc, etc.) to make it permanent.
 
 ## Usage
 Run the package using pipenv:
@@ -77,6 +90,11 @@ organized_photos/
 
 ## Performance
 - Uses parallel processing to handle large photo collections efficiently
-- Caches location data to minimize API calls
+- Caches location data to minimize API calls and reduce costs
 - Typically processes hundreds of photos per minute
-- Memory efficient, suitable for large collections 
+- Memory efficient, suitable for large collections
+
+## Notes
+- If the Google Maps API key is not set, location services will default to "Unknown Location"
+- The Google Maps Geocoding API has usage limits and may incur costs depending on your usage
+- Location caching helps reduce API calls and associated costs 

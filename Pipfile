@@ -7,7 +7,7 @@ name = "pypi"
 pillow = ">=10.4.0"
 exifread = ">=3.3.1"
 python-dateutil = ">=2.9.0.post0"
-geopy = ">=2.4.1"
+googlemaps = ">=4.10.0"
 tqdm = ">=4.66.2"
 
 [dev-packages]
