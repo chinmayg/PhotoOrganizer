@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class FileHandler:
     """Handles file operations and organization."""
     
-    DEFAULT_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic', '.heif', '.gif', '.mov'}
+    DEFAULT_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic', '.heif', '.gif', '.mov', '.mp4'}
     
     def __init__(self, output_folder: Path, debug: bool = False, file_types: Optional[List[str]] = None):
         self.output_folder = Path(output_folder)

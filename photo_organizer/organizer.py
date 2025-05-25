@@ -20,8 +20,6 @@ logger = logging.getLogger(__name__)
 class PhotoOrganizer:
     """Main class for organizing photos and videos."""
     
-    VIDEO_EXTENSIONS = {'.mov'}
-    
     def __init__(self, input_folder: str, output_folder: str, debug: bool = False,
                  max_workers: int = None, use_cache: bool = True, file_types: Optional[List[str]] = None):
         """Initialize the photo organizer."""
@@ -38,7 +36,7 @@ class PhotoOrganizer:
 
     def is_video_file(self, file_path: Path) -> bool:
         """Check if the file is a video file."""
-        return file_path.suffix.lower() in self.VIDEO_EXTENSIONS
+        return file_path.suffix.lower() in VideoHandler.SUPPORTED_FORMATS
 
     def process_photo(self, file_path: Path) -> Tuple[bool, str]:
         """Process a single media file."""

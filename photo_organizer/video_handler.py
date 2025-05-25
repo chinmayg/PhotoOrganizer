@@ -5,12 +5,16 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
 import os
-from moviepy.editor import VideoFileClip
+from hachoir.parser import createParser
+from hachoir.metadata import extractMetadata
+from hachoir.core.timezone import UTC
 
 logger = logging.getLogger(__name__)
 
 class VideoHandler:
     """Handles metadata extraction and processing from video files."""
+    
+    SUPPORTED_FORMATS = {'.mov', '.mp4'}
     
     def __init__(self, debug: bool = False):
         self.debug = debug
@@ -35,18 +39,43 @@ class VideoHandler:
         """Extract metadata from a video file."""
         try:
             metadata = {}
-            with VideoFileClip(str(video_path)) as clip:
+            
+            # Create parser for the video file
+            parser = createParser(str(video_path))
+            if not parser:
+                logger.error(f"Unable to parse {video_path}")
+                return metadata
+            
+            try:
+                # Extract metadata
+                hachoir_metadata = extractMetadata(parser)
+                if not hachoir_metadata:
+                    logger.error(f"Unable to extract metadata from {video_path}")
+                    return metadata
+
+                # Get creation date
+                if hachoir_metadata.has('creation_date'):
+                    metadata['creation_date'] = hachoir_metadata.get('creation_date')
+
                 # Get basic video information
-                metadata['duration'] = clip.duration
-                metadata['size'] = (clip.size[0], clip.size[1])
-                metadata['fps'] = clip.fps
+                if hachoir_metadata.has('duration'):
+                    metadata['duration'] = hachoir_metadata.get('duration').total_seconds()
                 
-                if hasattr(clip.reader, 'infos'):
-                    # MoviePy can sometimes access ffmpeg metadata
-                    metadata.update(clip.reader.infos)
+                if hachoir_metadata.has('width') and hachoir_metadata.has('height'):
+                    metadata['width'] = hachoir_metadata.get('width')
+                    metadata['height'] = hachoir_metadata.get('height')
                 
-            if self.debug:
-                self.debug_metadata(video_path, metadata)
+                # Get GPS data if available
+                # Note: Hachoir might not directly expose GPS data, we'll need to look in raw metadata
+                for key, value in hachoir_metadata._Metadata__data.items():
+                    if 'gps' in key.lower():
+                        metadata[key] = value.value
+                
+                if self.debug:
+                    self.debug_metadata(video_path, metadata)
+                    
+            finally:
+                parser.close()
                     
             return metadata
         except Exception as e:
@@ -59,13 +88,16 @@ class VideoHandler:
         """Extract the date when the video was taken."""
         try:
             # Try to get date from metadata
-            # MOV files often store creation time in metadata
-            if 'creation_time' in metadata:
+            if 'creation_date' in metadata:
                 try:
-                    return datetime.strptime(metadata['creation_time'], '%Y-%m-%d %H:%M:%S')
-                except ValueError:
+                    # Hachoir returns datetime objects in UTC
+                    date = metadata['creation_date']
                     if self.debug:
-                        logger.debug(f"Could not parse creation_time: {metadata['creation_time']}")
+                        logger.debug(f"Found creation date in metadata: {date}")
+                    return date
+                except (ValueError, TypeError) as e:
+                    if self.debug:
+                        logger.debug(f"Could not parse creation_date: {e}")
             
             # Fallback to file system timestamps
             stat = os.stat(video_path)
@@ -89,15 +121,25 @@ class VideoHandler:
         try:
             gps_data = {}
             
-            # MOV files might store GPS data in metadata
-            if 'location' in metadata:
-                location = metadata['location']
-                if isinstance(location, dict):
-                    if 'latitude' in location and 'longitude' in location:
-                        gps_data['GPS GPSLatitude'] = location['latitude']
-                        gps_data['GPS GPSLongitude'] = location['longitude']
-                        gps_data['GPS GPSLatitudeRef'] = 'N' if location['latitude'] >= 0 else 'S'
-                        gps_data['GPS GPSLongitudeRef'] = 'E' if location['longitude'] >= 0 else 'W'
+            # Look for GPS data in metadata
+            # Different video formats might store GPS data differently
+            for key, value in metadata.items():
+                key_lower = key.lower()
+                if 'gps' in key_lower:
+                    if 'latitude' in key_lower:
+                        try:
+                            lat = float(value)
+                            gps_data['GPS GPSLatitude'] = abs(lat)
+                            gps_data['GPS GPSLatitudeRef'] = 'N' if lat >= 0 else 'S'
+                        except (ValueError, TypeError):
+                            pass
+                    elif 'longitude' in key_lower:
+                        try:
+                            lon = float(value)
+                            gps_data['GPS GPSLongitude'] = abs(lon)
+                            gps_data['GPS GPSLongitudeRef'] = 'E' if lon >= 0 else 'W'
+                        except (ValueError, TypeError):
+                            pass
             
             if self.debug and gps_data:
                 logger.debug("Found GPS data in video metadata:")

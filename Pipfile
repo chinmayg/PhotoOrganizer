@@ -9,7 +9,7 @@ exifread = ">=3.3.1"
 python-dateutil = ">=2.9.0.post0"
 googlemaps = ">=4.10.0"
 tqdm = ">=4.66.2"
-moviepy = ">=1.0.3"
+hachoir = ">=3.3.0"
 
 [dev-packages]
 
