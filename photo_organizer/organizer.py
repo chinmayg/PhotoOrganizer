@@ -3,7 +3,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import os
@@ -20,7 +20,7 @@ class PhotoOrganizer:
     """Main class for organizing photos."""
     
     def __init__(self, input_folder: str, output_folder: str, debug: bool = False,
-                 max_workers: int = None, use_cache: bool = True):
+                 max_workers: int = None, use_cache: bool = True, file_types: Optional[List[str]] = None):
         """Initialize the photo organizer."""
         self.input_folder = Path(input_folder)
         self.output_folder = Path(output_folder)
@@ -30,7 +30,7 @@ class PhotoOrganizer:
         # Initialize handlers
         self.exif_handler = ExifHandler(debug=debug)
         self.gps_handler = GPSHandler(debug=debug, use_cache=use_cache)
-        self.file_handler = FileHandler(output_folder, debug=debug)
+        self.file_handler = FileHandler(output_folder, debug=debug, file_types=file_types)
 
     def process_photo(self, file_path: Path) -> Tuple[bool, str]:
         """Process a single photo file."""

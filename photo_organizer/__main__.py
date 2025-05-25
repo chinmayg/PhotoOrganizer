@@ -3,7 +3,15 @@
 import argparse
 import logging
 import sys
+from typing import List
 from .organizer import PhotoOrganizer
+from .file_handler import FileHandler
+
+def parse_file_types(file_types_str: str) -> List[str]:
+    """Parse comma-separated file types string into a list."""
+    if not file_types_str:
+        return []
+    return [ext.strip() for ext in file_types_str.split(',')]
 
 def main():
     """Main entry point for the photo organizer."""
@@ -18,6 +26,9 @@ def main():
                       help='Number of worker threads (default: CPU count * 2)')
     parser.add_argument('--no-cache', action='store_true',
                       help='Disable geocoding cache')
+    parser.add_argument('--file-types',
+                      help='Comma-separated list of file extensions to process (e.g., "jpg,png,heic"). '
+                           f'Default: {",".join(ext[1:] for ext in FileHandler.DEFAULT_EXTENSIONS)}')
     
     args = parser.parse_args()
     
@@ -28,13 +39,17 @@ def main():
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
     
+    # Parse file types
+    file_types = parse_file_types(args.file_types) if args.file_types else None
+    
     try:
         organizer = PhotoOrganizer(
             args.input_folder,
             args.output_folder,
             debug=args.debug,
             max_workers=args.workers,
-            use_cache=not args.no_cache
+            use_cache=not args.no_cache,
+            file_types=file_types
         )
         organizer.organize_photos()
     except KeyboardInterrupt:

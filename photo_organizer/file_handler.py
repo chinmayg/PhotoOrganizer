@@ -4,14 +4,16 @@ import logging
 import shutil
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Set
+from typing import Dict, Set, Optional, List
 
 logger = logging.getLogger(__name__)
 
 class FileHandler:
     """Handles file operations and organization."""
     
-    def __init__(self, output_folder: Path, debug: bool = False):
+    DEFAULT_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.heic', '.heif', '.gif'}
+    
+    def __init__(self, output_folder: Path, debug: bool = False, file_types: Optional[List[str]] = None):
         self.output_folder = Path(output_folder)
         self.debug = debug
         self.month_names = {
@@ -19,7 +21,18 @@ class FileHandler:
             5: "05-May", 6: "06-June", 7: "07-July", 8: "08-August",
             9: "09-September", 10: "10-October", 11: "11-November", 12: "12-December"
         }
-        self.supported_extensions: Set[str] = {'.jpg', '.jpeg', '.png', '.heic', '.heif', '.gif'}
+        # Convert file types to lowercase and ensure they start with a dot
+        if file_types:
+            self.supported_extensions = {
+                ext.lower() if ext.startswith('.') else f'.{ext.lower()}'
+                for ext in file_types
+            }
+            if self.debug:
+                logger.debug(f"Using custom file types: {self.supported_extensions}")
+        else:
+            self.supported_extensions = self.DEFAULT_EXTENSIONS
+            if self.debug:
+                logger.debug(f"Using default file types: {self.supported_extensions}")
 
     def is_image_file(self, file_path: Path) -> bool:
         """Check if the file is a supported image."""

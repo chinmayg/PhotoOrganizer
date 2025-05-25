@@ -7,6 +7,7 @@ A Python package that organizes photos from different sources (iPhone and Androi
 - Creates location-based subfolders when GPS data is available
 - Uses Google Maps Geocoding API for accurate location data
 - Supports both iPhone and Android photo formats
+- Customizable file type filtering
 - Preserves original files and metadata
 - Handles duplicate filenames
 - Parallel processing for faster organization
@@ -54,6 +55,8 @@ pipenv run python -m photo_organizer --input-folder /path/to/photos --output-fol
 - `--debug`: Enable debug mode for detailed logging
 - `--workers`: Number of worker threads (default: CPU count * 2)
 - `--no-cache`: Disable location caching (not recommended for large collections)
+- `--file-types`: Comma-separated list of file extensions to process (e.g., "jpg,png,heic")
+  Default: jpg,jpeg,png,heic,heif,gif
 
 ### Examples
 Basic usage:
@@ -64,6 +67,11 @@ pipenv run python -m photo_organizer --input-folder ~/Downloads/photos --output-
 With debug mode and custom worker count:
 ```bash
 pipenv run python -m photo_organizer --input-folder ~/Photos --output-folder ~/Organized --debug --workers 4
+```
+
+Process only JPG and PNG files:
+```bash
+pipenv run python -m photo_organizer --input-folder ~/Photos --output-folder ~/Organized --file-types jpg,png
 ```
 
 ## Output Structure
@@ -97,4 +105,5 @@ organized_photos/
 ## Notes
 - If the Google Maps API key is not set, location services will default to "Unknown Location"
 - The Google Maps Geocoding API has usage limits and may incur costs depending on your usage
-- Location caching helps reduce API calls and associated costs 
+- Location caching helps reduce API calls and associated costs
+- File type filtering is case-insensitive and handles extensions with or without dots 
